@@ -1,6 +1,6 @@
 require "keccak1600.jinc"
 
-inline fn __sha3_256_ref(reg u64 out in inlen)
+inline fn __sha3_256_msk(reg u64 out in inlen)
 {
   reg u64 outlen rate;
   reg u8 trail_byte;

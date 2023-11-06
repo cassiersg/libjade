@@ -1,7 +1,6 @@
 param int KECCAK_ROUNDS=24;
 
 require "masked_keccakf1600.jinc"
-// require "keccakf1600.jinc"
 
 inline fn __keccak_init_ref() -> stack u64[25]
 {
