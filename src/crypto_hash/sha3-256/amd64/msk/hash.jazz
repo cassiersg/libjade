@@ -1,0 +1,14 @@
+require "sha3-256.jinc"
+
+export fn jade_hash_sha3_256_amd64_msk(reg u64 hash input input_length) -> reg u64
+{
+  reg u64 r;
+  
+  __sha3_256_ref(hash, input, input_length);
+
+  //(u8)[hash] = 1;
+  ?{}, r = #set0();
+  return r;
+}
+
+

@@ -1,0 +1,119 @@
+require "masked_constants.jinc"
+
+// The PRM4_masked code used fully dynamic gadgets with runtime number of
+// shares, and sharings represented by (pointer to first share, stride).
+//
+// In Jasmin, we cannot directly use pointers to stack memory.
+// Therefore, to keep it simple for now, we assume memcpy-ed arrays, hence
+// fixed size of NSHARES and stride 1..
+
+fn masked_xor(reg ptr u64[NSHARES] a b c) -> reg ptr u64[NSHARES] {
+    reg u64 ta tb tc;
+    inline int i;
+    for i = 0 to NSHARES {
+        ta = a[i];
+        tb = b[i];
+        tc = ta ^ tb;
+        c[i] = tc;
+    }
+    return c;
+}
+
+inline fn masked_not(stack u64[NSHARES] x) -> stack u64[NSHARES] {
+    reg u64 t;
+    t = x[0];
+    t = !t;
+    x[0] = t;
+    return x;
+}
+
+// Utility for masked_and
+inline fn pini_and_core(reg u64 a b r) -> reg u64 {
+    reg u64 temp s;
+    temp = b ^ r;
+    temp &= a;
+    s = r & !a;
+    s = s ^ temp;
+    return s;
+}
+
+fn rnd_u64() -> reg u64 {
+    stack u8[8] r;
+    reg u64 s;
+    r = #randombytes(r);
+    s = r[u64 0];
+    return s;
+}
+
+fn masked_and(reg ptr u64[NSHARES] a b c) -> reg ptr u64[NSHARES] {
+    reg u64 i j r r2 t t2 ta tb;
+    i = 0;
+    while (i < NSHARES) {
+        ta = a[(int) i];
+        tb = b[(int) i];
+        t = ta & tb;
+        c[(int) i] = t;
+        i += 1;
+    }
+    i = 0;
+    while (i < NSHARES) {
+        j = i;
+        j = j+1;
+        while (j < NSHARES) {
+            r = rnd_u64();
+            r2 = r;
+
+            t = c[(int) i];
+            ta = a[(int) i];
+            tb = b[(int) j];
+            t2 = pini_and_core(ta, tb, r2);
+            t ^= t2;
+            c[(int) i] = t;
+
+            t = c[(int) j];
+            ta = a[(int) j];
+            tb = b[(int) i];
+            t2 = pini_and_core(ta, tb, r);
+            t ^= t2;
+            c[(int) j] = t;
+
+            j += 1;
+        }
+        i += 1;
+    }
+    return c;
+}
+
+
+// Unmasked 64-bit Bitslice masked value.
+inline fn unmask_boolean(stack u64[NSHARES] x) -> reg u64 {
+    reg u64 res;
+    inline int i;
+    res = 0;
+    for i = 0 to NSHARES {
+        res ^= x[i];
+    }
+    return res;
+}
+
+
+fn extract_sharing(reg ptr u64[MSTATE] state, reg u64 offset, reg ptr u64[NSHARES] res) -> reg ptr u64[NSHARES] {
+    reg u64 t;
+    inline int i;
+    for i = 0 to NSHARES {
+        t = state[(int) offset + i * STATE];
+        res[i] = t;
+    }
+    return res;
+}
+
+inline fn insert_sharing(stack u64[MSTATE] state, stack u64[NSHARES] sharing, reg u64 offset) -> stack u64[MSTATE] {
+    reg u64 t;
+    inline int i;
+    for i = 0 to NSHARES {
+        t = sharing[i];
+        state[(int) offset + i * STATE] = t;
+    }
+    return state;
+}
+
