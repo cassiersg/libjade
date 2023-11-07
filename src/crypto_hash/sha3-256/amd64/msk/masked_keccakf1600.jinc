@@ -229,20 +229,19 @@ fn __refresh_state(reg ptr u64[MSTATE] state) -> reg ptr u64[MSTATE] {
 }
 fn __unmask_state(reg ptr u64[MSTATE] state) -> reg ptr u64[MSTATE] {
     reg u64 i s;
+    stack u64[NSHARES] sharing;
     s = STATE;
     i = 0;
     while (i < 25) {
-        reg u64 j;
-        j = STATE;
-        while (j < MSTATE) {
-            reg u64 x off;
-            off = j;
-            off += i;
-            x = state[(int) off];
-            state[(int) off] = 0;
-            state[(int) i] ^= x;
-            j += s;
-        }
+        sharing = extract_sharing(state, i, sharing);
+        reg u64 x;
+        x = unmask_boolean(sharing);
+        state[(int) i] = x;
+        i += 1;
+    }
+    i = STATE;
+    while (i < MSTATE) {
+        state[(int) i] = 0;
         i += 1;
     }
     return state;
