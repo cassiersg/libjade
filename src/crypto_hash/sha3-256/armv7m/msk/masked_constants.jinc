@@ -1,0 +1,8 @@
+
+param int NSHARES = 2;
+
+param int STATE = 25*2;
+param int MSTATE = NSHARES*STATE;
+
+param int ROW= 5*2;
+param int MROW = NSHARES*ROW;
